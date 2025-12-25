@@ -18,6 +18,7 @@ from mmdet3d.models import build_model
 from mmdet.apis import multi_gpu_test, set_random_seed
 from mmdet.datasets import replace_ImageToTensor
 import torch.nn as nn
+import pickle
 
 class ModelWrapper(nn.Module):
     def __init__(self, original_model):
@@ -34,54 +35,55 @@ class ModelWrapper(nn.Module):
         其中 data 包含 'img' 键
         """
         # 创建与原始模型兼容的输入字典
-        # a11 =torch.tensor([[ 0.0103,  0.0084,  0.9999,  1.7220],
-        #   [-0.9999,  0.0123,  0.0102,  0.0048],
-        #   [-0.0122, -0.9999,  0.0086,  1.4949],
-        #   [ 0.0000,  0.0000,  0.0000,  1.0000]])
-        # a21 = torch.tensor([[ 8.6781e-01,  4.9671e-01,  1.3737e-02,  6.0382e+02],
-        #   [-4.9659e-01,  8.6791e-01, -1.0893e-02,  1.6454e+03],
-        #   [-1.7334e-02,  2.6314e-03,  9.9985e-01,  0.0000e+00],
-        #   [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  1.0000e+00]])
-        # a31 = torch.tensor([[7.9689e+02, 0.0000e+00, 8.5778e+02],
-        #   [0.0000e+00, 7.9689e+02, 4.7688e+02],
-        #   [0.0000e+00, 0.0000e+00, 1.0000e+00]])
-        # a41 = torch.tensor( [[0.4400, 0.0000, 0.0000],
-        #   [0.0000, 0.4400, 0.0000],
-        #   [0.0000, 0.0000, 1.0000]])
-        # a51 = 
-        data = {
-            'img_inputs': [[input_tensor.cuda(),
-                           torch.randn(1, 6, 4, 4).cuda(),
-                           torch.randn(1, 6, 4, 4).cuda(),
-                           torch.randn(1, 6, 3, 3).cuda(),
-                           torch.randn(1, 6, 3, 3).cuda(),
-                           torch.randn(1, 6, 3).cuda(),
-                           torch.randn(1, 3, 3).cuda()]],
-            # 根据实际情况调整
-            'img_metas': [[{
-                'flip': False,
-                # 其他必要的元数据
-            },{
-                'flip': False,
-                # 其他必要的元数据
-            },{
-                'flip': False,
-                # 其他必要的元数据
-            },{
-                'flip': False,
-                # 其他必要的元数据
-            },{
-                'flip': False,
-                # 其他必要的元数据
-            },{
-                'flip': False,
-                # 其他必要的元数据
-            },{
-                'flip': False,
-                # 其他必要的元数据
-            }]],
-            'img_points': [[torch.tensor([1,2,3,4,5]).cuda()]]  # 根据实际情况调整
-        }
+        with open('dummy_data.pkl', 'rb') as f:  # with语句自动关闭文件，更安全
+            data_input = pickle.load(f)
+        data = {}    
+        data.update({"img_inputs":[[data_input['img_inputs'][0][0].cuda(),
+                           data_input['img_inputs'][0][1].cuda(),
+                           data_input['img_inputs'][0][2].cuda(),
+                           data_input['img_inputs'][0][3].cuda(),
+                           data_input['img_inputs'][0][4].cuda(),
+                           data_input['img_inputs'][0][5].cuda(),
+                           data_input['img_inputs'][0][6].cuda()]]})
+        
+        data.update({"img_metas": data_input['img_metas']})
+        data_input['points'][0].data[0][0] = data_input['points'][0].data[0][0].cuda()
+        data.update({"points": data_input['points']})
+        
+        # data = {
+        #     'img_inputs': [[input_tensor.cuda(),
+        #                    torch.randn(1, 6, 4, 4).cuda(),
+        #                    torch.randn(1, 6, 4, 4).cuda(),
+        #                    torch.randn(1, 6, 3, 3).cuda(),
+        #                    torch.randn(1, 6, 3, 3).cuda(),
+        #                    torch.randn(1, 6, 3).cuda(),
+        #                    torch.randn(1, 3, 3).cuda()]],
+            
+        #     # 根据实际情况调整
+        #     'img_metas': [[{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     },{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     },{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     },{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     },{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     },{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     },{
+        #         'flip': False,
+        #         # 其他必要的元数据
+        #     }]],
+        #     'img_points': [[torch.tensor([1,2,3,4,5]).cuda()]]  # 根据实际情况调整
+        # }
         
         # 调用原始模型
         result = self.model(
